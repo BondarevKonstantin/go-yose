@@ -58,8 +58,19 @@ type QuizSolveMode = 'full' | 'count-only';
 const QuizPageContent = ({ card, isSingleCardMode, onNextCard }: QuizPageContentProps) => {
   const initialScenario = useMemo(() => getScenarioById(card, card.initialScenarioId), [card]);
 
+  const baseButtonStyle: React.CSSProperties = {
+    padding: '8px 12px',
+    borderRadius: 10,
+    border: '1px solid #e5e7eb',
+    background: '#ffffff',
+    color: '#374151',
+    cursor: 'pointer',
+    fontSize: 14,
+    transition: 'all 0.15s ease',
+  };
+
   const createInitialReviewState = (): ReviewSessionState => ({
-    mode: null,
+    mode: 'guided',
     progress: 'idle',
     currentScenarioId: card.initialScenarioId,
     currentStones: initialScenario.initialStones,
@@ -587,174 +598,352 @@ const QuizPageContent = ({ card, isSingleCardMode, onNextCard }: QuizPageContent
   };
 
   return (
-    <div style={{ padding: 24 }}>
-      <GoBoard
-        size={card.size}
-        viewport={card.viewport}
-        stones={phase === 'answering' ? initialScenario.initialStones : review.currentStones}
-        isInteractive={
-          phase === 'review' &&
-          (review.mode === 'guided' || review.mode === 'self-play') &&
-          review.progress !== 'finished' &&
-          !review.isAnimating
-        }
-        onPointClick={handleBoardPointClick}
-        markers={markers}
-      />
+    <div
+      style={{
+        minHeight: 'calc(100vh - 56px)',
+        background: '#f3f4f6',
+        display: 'flex',
+        justifyContent: 'center',
+        padding: '40px 20px',
+      }}
+    >
+      <div
+        style={{
+          width: '100%',
+          maxWidth: 1200,
+          display: 'grid',
+          gridTemplateColumns: '480px 380px',
+          gap: 32,
+          alignItems: 'flex-start',
+        }}
+      >
+        {/* LEFT: BOARD CARD */}
+        <div
+          style={{
+            background: '#ffffff',
+            border: '1px solid #e5e7eb',
+            borderRadius: 20,
+            padding: 20,
+          }}
+        >
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 18, fontWeight: 600 }}>{card.title ?? card.id}</div>
 
-      <div style={{ marginTop: 16 }}>
-        {phase === 'answering' && (
-          <>
-            <div style={{ marginBottom: 12 }}>
-              <div>Режим:</div>
-
-              <button
-                onClick={() => setSolveMode('full')}
-                style={{
-                  marginRight: 8,
-                  fontWeight: solveMode === 'full' ? 'bold' : 'normal',
-                }}
-              >
-                Полная задача
-              </button>
-
-              <button
-                onClick={() => setSolveMode('count-only')}
-                style={{
-                  fontWeight: solveMode === 'count-only' ? 'bold' : 'normal',
-                }}
-              >
-                Только посчитать
-              </button>
+            <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
+              {card.size}×{card.size} · {solveMode === 'full' ? 'Full task' : 'Count only'}
             </div>
-            <div>Сколько очков?</div>
+          </div>
 
-            <input
-              type="number"
-              value={answerForm.value}
-              onChange={(e) =>
-                setAnswerForm((prev) => ({
-                  ...prev,
-                  value: e.target.value,
-                }))
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <GoBoard
+              size={card.size}
+              viewport={card.viewport}
+              boardSizePx={460}
+              stones={phase === 'answering' ? initialScenario.initialStones : review.currentStones}
+              markers={markers}
+              isInteractive={
+                phase === 'review' &&
+                (review.mode === 'guided' || review.mode === 'self-play') &&
+                review.progress !== 'finished' &&
+                !review.isAnimating
               }
+              onPointClick={handleBoardPointClick}
             />
+          </div>
+        </div>
 
-            <div style={{ marginTop: 12 }}>
-              Тип:
-              <select
-                value={answerForm.resultType}
-                onChange={(e) =>
-                  setAnswerForm((prev) => ({
-                    ...prev,
-                    resultType: e.target.value as YoseResultType,
-                  }))
-                }
-              >
-                <option value="">Выбери</option>
-                <option value="sente">Sente</option>
-                <option value="gote">Gote</option>
-                <option value="reverse-sente">Reverse sente</option>
-                <option value="double-sente">Double sente</option>
-              </select>
-            </div>
+        {/* RIGHT: WORK PANEL */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 16,
+          }}
+        >
+          {/* SOLVE */}
+          {phase === 'answering' && (
+            <div
+              style={{
+                background: '#ffffff',
+                border: '1px solid #e5e7eb',
+                borderRadius: 16,
+                padding: 16,
+              }}
+            >
+              <div style={{ fontWeight: 600, marginBottom: 12 }}>Solve</div>
 
-            <button style={{ marginTop: 12 }} onClick={handleCheckAnswer}>
-              Проверить
-            </button>
-          </>
-        )}
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>Mode</div>
 
-        {phase === 'review' && (
-          <>
-            <div>{review.message}</div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={() => setSolveMode('full')}
+                    style={{
+                      padding: '6px 10px',
+                      borderRadius: 8,
+                      border: '1px solid #e5e7eb',
+                      background: solveMode === 'full' ? '#e5e7eb' : 'transparent',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Full
+                  </button>
 
-            {review.progress === 'idle' && (
-              <div style={{ marginTop: 12 }}>
-                <div>Выбери режим:</div>
-
-                <button
-                  onClick={() =>
-                    setReview((prev) => ({
-                      ...prev,
-                      mode: 'guided',
-                      message: 'Режим: автоответ',
-                    }))
-                  }
-                >
-                  Автоответ
-                </button>
-
-                <button
-                  onClick={() =>
-                    setReview((prev) => ({
-                      ...prev,
-                      mode: 'self-play',
-                      message: 'Режим: прокликай вариант самостоятельно',
-                    }))
-                  }
-                >
-                  Прокликать самому
-                </button>
-
-                <button
-                  onClick={() =>
-                    setReview((prev) => ({
-                      ...prev,
-                      mode: 'step-viewer',
-                      message: 'Режим: по шагам',
-                    }))
-                  }
-                >
-                  По шагам
-                </button>
-
-                {review.mode === 'guided' && (
-                  <div style={{ marginTop: 12 }}>
-                    <button onClick={handleGuidedPass}>Pass</button>
-                    <button onClick={handleBestMove} style={{ marginLeft: 8 }}>
-                      Следующий лучший ход
-                    </button>
-                  </div>
-                )}
-
-                {review.mode === 'self-play' && (
-                  <div style={{ marginTop: 12 }}>
-                    <button onClick={handleSelfPlayPass}>Pass</button>
-                  </div>
-                )}
+                  <button
+                    onClick={() => setSolveMode('count-only')}
+                    style={{
+                      padding: '6px 10px',
+                      borderRadius: 8,
+                      border: '1px solid #e5e7eb',
+                      background: solveMode === 'count-only' ? '#e5e7eb' : 'transparent',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Count only
+                  </button>
+                </div>
               </div>
-            )}
 
-            {review.mode === 'step-viewer' && (
-              <div style={{ marginTop: 12 }}>
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 13, color: '#6b7280' }}>Points</div>
+                <input
+                  type="number"
+                  value={answerForm.value}
+                  onChange={(e) =>
+                    setAnswerForm((prev) => ({
+                      ...prev,
+                      value: e.target.value,
+                    }))
+                  }
+                  style={{
+                    width: '100%',
+                    padding: 8,
+                    borderRadius: 8,
+                    border: '1px solid #e5e7eb',
+                    marginTop: 4,
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 13, color: '#6b7280' }}>Type</div>
+                <select
+                  value={answerForm.resultType}
+                  onChange={(e) =>
+                    setAnswerForm((prev) => ({
+                      ...prev,
+                      resultType: e.target.value as YoseResultType,
+                    }))
+                  }
+                  style={{
+                    width: '100%',
+                    padding: 8,
+                    borderRadius: 8,
+                    border: '1px solid #e5e7eb',
+                    marginTop: 4,
+                  }}
+                >
+                  <option value="">Select</option>
+                  <option value="sente">Sente</option>
+                  <option value="gote">Gote</option>
+                  <option value="reverse-sente">Reverse sente</option>
+                  <option value="double-sente">Double sente</option>
+                </select>
+              </div>
+
+              <button
+                onClick={handleCheckAnswer}
+                style={{
+                  width: '100%',
+                  padding: 10,
+                  borderRadius: 10,
+                  border: 'none',
+                  background: '#4b5563',
+                  color: '#fff',
+                  cursor: 'pointer',
+                }}
+              >
+                Submit
+              </button>
+            </div>
+          )}
+
+          {/* RESULT */}
+          {phase === 'review' && (
+            <div
+              style={{
+                background: '#ffffff',
+                border: '1px solid #e5e7eb',
+                borderRadius: 16,
+                padding: 16,
+              }}
+            >
+              <div style={{ fontWeight: 600, marginBottom: 8 }}>Result</div>
+              <div>{review.message}</div>
+            </div>
+          )}
+
+          {/* REVIEW */}
+          {phase === 'review' && (
+            <div
+              style={{
+                background: '#ffffff',
+                border: '1px solid #e5e7eb',
+                borderRadius: 16,
+                padding: 16,
+              }}
+            >
+              <div style={{ fontWeight: 600, marginBottom: 12 }}>Review</div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  background: '#f3f4f6',
+                  borderRadius: 12,
+                  padding: 4,
+                  gap: 4,
+                }}
+              >
+                {[
+                  { key: 'guided', label: 'Guided' },
+                  { key: 'step-viewer', label: 'Step' },
+                  { key: 'self-play', label: 'Self' },
+                ].map((item) => {
+                  const isActive = review.mode === item.key;
+
+                  return (
+                    <button
+                      key={item.key}
+                      onClick={() =>
+                        setReview((prev) => ({
+                          ...prev,
+                          mode: item.key as typeof prev.mode,
+                          message:
+                            item.key === 'guided'
+                              ? 'Режим: автоответ'
+                              : item.key === 'step-viewer'
+                                ? 'Режим: по шагам'
+                                : 'Режим: прокликай вариант самостоятельно',
+                        }))
+                      }
+                      style={{
+                        flex: 1,
+                        padding: '8px 10px',
+                        borderRadius: 10,
+                        border: 'none',
+                        background: isActive ? '#ffffff' : 'transparent',
+                        boxShadow: isActive ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
+                        cursor: 'pointer',
+                        fontWeight: isActive ? 600 : 500,
+                        color: isActive ? '#111827' : '#6b7280',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {review.mode === 'guided' && (
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={handleGuidedPass}
+                    style={baseButtonStyle}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#f9fafb';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = '#ffffff';
+                    }}
+                  >
+                    Pass
+                  </button>
+
+                  <button
+                    onClick={handleBestMove}
+                    style={baseButtonStyle}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#f9fafb';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = '#ffffff';
+                    }}
+                  >
+                    Best move
+                  </button>
+                </div>
+              )}
+
+              {review.mode === 'step-viewer' && (
                 <button
                   onClick={handleStepViewerNextMove}
                   disabled={review.isAnimating || review.progress === 'finished'}
+                  style={{
+                    ...baseButtonStyle,
+                    opacity: review.isAnimating || review.progress === 'finished' ? 0.5 : 1,
+                    cursor:
+                      review.isAnimating || review.progress === 'finished' ? 'default' : 'pointer',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!review.isAnimating && review.progress !== 'finished') {
+                      e.currentTarget.style.background = '#f9fafb';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#ffffff';
+                  }}
                 >
-                  Следующий ход
-                </button>
-              </div>
-            )}
-
-            {review.progress !== 'idle' && (
-              <div style={{ marginTop: 12 }}>
-                Режим: {review.mode}
-                {review.isAnimating && <div>Компьютер думает...</div>}
-              </div>
-            )}
-
-            <div style={{ marginTop: 16 }}>
-              <button onClick={resetReviewState}>Сбросить разбор</button>
-
-              {!isSingleCardMode && (
-                <button onClick={handleNextCard} style={{ marginLeft: 8 }}>
-                  Следующая карточка
+                  Next move
                 </button>
               )}
+
+              {review.mode === 'self-play' && (
+                <button
+                  onClick={handleSelfPlayPass}
+                  style={baseButtonStyle}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#f9fafb';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#ffffff';
+                  }}
+                >
+                  Pass
+                </button>
+              )}
+
+              <div style={{ marginTop: 12 }}>
+                <button
+                  onClick={resetReviewState}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 10,
+                    border: '1px solid #e5e7eb',
+                    background: '#ffffff',
+                    color: '#374151',
+                    cursor: 'pointer',
+                    fontSize: 14,
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#f9fafb';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#ffffff';
+                  }}
+                >
+                  Reset
+                </button>
+                {!isSingleCardMode && (
+                  <button style={{ marginLeft: 8 }} onClick={handleNextCard}>
+                    Next card
+                  </button>
+                )}
+              </div>
             </div>
-          </>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
