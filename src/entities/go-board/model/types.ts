@@ -9,6 +9,12 @@ export type Stone = BoardPoint & {
   color: StoneColor;
 };
 
+export type Marker =
+  | (BoardPoint & { type: 'triangle' })
+  | (BoardPoint & { type: 'circle' })
+  | (BoardPoint & { type: 'square' })
+  | (BoardPoint & { type: 'label'; text: string });
+
 export type BoardViewport =
   | { type: 'full' }
   | {

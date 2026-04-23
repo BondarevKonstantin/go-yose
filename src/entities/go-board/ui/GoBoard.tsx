@@ -1,26 +1,33 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   getBoardPixelPosition,
   getStarPoints,
   getVisibleArea,
   getVisibleEdges,
+  getVisiblePoints,
   isPointInVisibleArea,
 } from '../model/boardMath';
-import { BoardViewport, Stone } from '../model/types';
+import { BoardPoint, BoardViewport, Marker, Stone } from '../model/types';
 
 type Props = {
   size?: 9 | 13 | 19;
   boardSizePx?: number;
   stones?: Stone[];
+  markers?: Marker[];
   viewport?: BoardViewport;
+  onPointClick?: (point: BoardPoint) => void;
 };
 
 export const GoBoard = ({
   size = 9,
   boardSizePx = 560,
   stones = [],
+  markers = [],
   viewport = { type: 'full' },
+  onPointClick,
 }: Props) => {
+  const [hoveredPoint, setHoveredPoint] = useState<BoardPoint | null>(null);
+
   const padding = 36;
   const edgeStrokeWidth = 2.6;
   const edgeBleed = edgeStrokeWidth / 2 + 1;
@@ -37,6 +44,9 @@ export const GoBoard = ({
     stoneRadius,
     starPoints,
     visibleStones,
+    visibleMarkers,
+    visiblePoints,
+    isHoveredPointVisible,
     viewBox,
     svgWidth,
     svgHeight,
@@ -49,8 +59,6 @@ export const GoBoard = ({
     const innerWidth = boardSizePx - padding * 2;
     const innerHeight = boardSizePx - padding * 2;
 
-    const outerPadding = 24;
-
     const nextCellSize = Math.min(
       innerWidth / Math.max(visibleColumns - 1, 1),
       innerHeight / Math.max(visibleRows - 1, 1),
@@ -62,32 +70,19 @@ export const GoBoard = ({
     const nextInnerEndX = padding + realInnerWidth;
     const nextInnerEndY = padding + realInnerHeight;
 
-    const leftCrop =
-      area.xMin === 1
-        ? padding - edgeBleed
-        : padding + nextCellSize / 2;
-
+    const leftCrop = area.xMin === 1 ? padding - edgeBleed : padding + nextCellSize / 2;
     const rightCrop =
-      area.xMax === size
-        ? nextInnerEndX + edgeBleed
-        : nextInnerEndX - nextCellSize / 2;
-
-    const topCrop =
-      area.yMin === 1
-        ? padding - edgeBleed
-        : padding + nextCellSize / 2;
-
+      area.xMax === size ? nextInnerEndX + edgeBleed : nextInnerEndX - nextCellSize / 2;
+    const topCrop = area.yMin === 1 ? padding - edgeBleed : padding + nextCellSize / 2;
     const bottomCrop =
-      area.yMax === size
-        ? nextInnerEndY + edgeBleed
-        : nextInnerEndY - nextCellSize / 2;
+      area.yMax === size ? nextInnerEndY + edgeBleed : nextInnerEndY - nextCellSize / 2;
 
     const nextViewBox = {
-  x: leftCrop - outerPadding,
-  y: topCrop - outerPadding,
-  width: rightCrop - leftCrop + outerPadding * 2,
-  height: bottomCrop - topCrop + outerPadding * 2,
-};
+      x: leftCrop,
+      y: topCrop,
+      width: rightCrop - leftCrop,
+      height: bottomCrop - topCrop,
+    };
 
     const longerSide = Math.max(nextViewBox.width, nextViewBox.height);
     const scale = boardSizePx / longerSide;
@@ -102,15 +97,27 @@ export const GoBoard = ({
       innerEndX: nextInnerEndX,
       innerEndY: nextInnerEndY,
       stoneRadius: nextCellSize * 0.42,
-      starPoints: getStarPoints(size).filter((point) =>
-        isPointInVisibleArea(point, area),
-      ),
+      starPoints: getStarPoints(size).filter((point) => isPointInVisibleArea(point, area)),
       visibleStones: stones.filter((stone) => isPointInVisibleArea(stone, area)),
+      visibleMarkers: markers.filter((marker) => isPointInVisibleArea(marker, area)),
+      visiblePoints: getVisiblePoints(area),
+      isHoveredPointVisible: hoveredPoint ? isPointInVisibleArea(hoveredPoint, area) : false,
       viewBox: nextViewBox,
       svgWidth: nextViewBox.width * scale,
       svgHeight: nextViewBox.height * scale,
     };
-  }, [boardSizePx, padding, size, stones, viewport, edgeBleed]);
+  }, [boardSizePx, padding, size, stones, markers, viewport, hoveredPoint, edgeBleed]);
+
+  const hoveredPointPosition =
+    hoveredPoint && isHoveredPointVisible
+      ? getBoardPixelPosition({
+          point: hoveredPoint,
+          cellSize,
+          padding,
+          xMin: visibleArea.xMin,
+          yMin: visibleArea.yMin,
+        })
+      : null;
 
   return (
     <svg
@@ -247,6 +254,41 @@ export const GoBoard = ({
         />
       )}
 
+      {hoveredPointPosition && (
+        <circle
+          cx={hoveredPointPosition.x}
+          cy={hoveredPointPosition.y}
+          r={cellSize * 0.24}
+          fill="#d64545"
+          opacity={0.18}
+          pointerEvents="none"
+        />
+      )}
+
+      {visiblePoints.map((point) => {
+        const position = getBoardPixelPosition({
+          point,
+          cellSize,
+          padding,
+          xMin: visibleArea.xMin,
+          yMin: visibleArea.yMin,
+        });
+
+        return (
+          <circle
+            key={`hit-area-${point.x}-${point.y}`}
+            cx={position.x}
+            cy={position.y}
+            r={cellSize * 0.32}
+            fill="transparent"
+            onMouseEnter={() => setHoveredPoint(point)}
+            onMouseLeave={() => setHoveredPoint(null)}
+            onClick={() => onPointClick?.(point)}
+            style={{ cursor: onPointClick ? 'pointer' : 'default' }}
+          />
+        );
+      })}
+
       {visibleStones.map((stone) => {
         const position = getBoardPixelPosition({
           point: stone,
@@ -281,6 +323,40 @@ export const GoBoard = ({
             />
           </g>
         );
+      })}
+
+      {visibleMarkers.map((marker) => {
+        const position = getBoardPixelPosition({
+          point: marker,
+          cellSize,
+          padding,
+          xMin: visibleArea.xMin,
+          yMin: visibleArea.yMin,
+        });
+
+        if (marker.type === 'triangle') {
+          const triangleSize = stoneRadius * 0.8;
+
+          const points = [
+            `${position.x},${position.y - triangleSize}`,
+            `${position.x - triangleSize * 0.866},${position.y + triangleSize / 2}`,
+            `${position.x + triangleSize * 0.866},${position.y + triangleSize / 2}`,
+          ].join(' ');
+
+          return (
+            <polygon
+              key={`marker-${marker.type}-${marker.x}-${marker.y}`}
+              points={points}
+              fill="none"
+              stroke="#d64545"
+              strokeWidth={2.8}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          );
+        }
+
+        return null;
       })}
     </svg>
   );

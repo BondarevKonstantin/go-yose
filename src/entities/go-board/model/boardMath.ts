@@ -22,13 +22,6 @@ type VisibleEdges = {
   left: boolean;
 };
 
-type DisplayBounds = {
-  xStart: number;
-  xEnd: number;
-  yStart: number;
-  yEnd: number;
-};
-
 export const getBoardPixelPosition = ({
   point,
   cellSize,
@@ -54,10 +47,7 @@ export const getStarPoints = (size: 9 | 13 | 19): BoardPoint[] => {
   ];
 };
 
-export const getVisibleArea = (
-  size: 9 | 13 | 19,
-  viewport: BoardViewport,
-): VisibleArea => {
+export const getVisibleArea = (size: 9 | 13 | 19, viewport: BoardViewport): VisibleArea => {
   if (viewport.type === 'full') {
     return {
       xMin: 1,
@@ -149,17 +139,11 @@ export const getVisibleArea = (
 
 export const isPointInVisibleArea = (point: BoardPoint, area: VisibleArea) => {
   return (
-    point.x >= area.xMin &&
-    point.x <= area.xMax &&
-    point.y >= area.yMin &&
-    point.y <= area.yMax
+    point.x >= area.xMin && point.x <= area.xMax && point.y >= area.yMin && point.y <= area.yMax
   );
 };
 
-export const getVisibleEdges = (
-  size: 9 | 13 | 19,
-  area: VisibleArea,
-): VisibleEdges => {
+export const getVisibleEdges = (size: 9 | 13 | 19, area: VisibleArea): VisibleEdges => {
   return {
     top: area.yMin === 1,
     right: area.xMax === size,
@@ -168,32 +152,14 @@ export const getVisibleEdges = (
   };
 };
 
-export const getDisplayBounds = ({
-  padding,
-  cellSize,
-  xMin,
-  xMax,
-  yMin,
-  yMax,
-  boardSize,
-}: {
-  padding: number;
-  cellSize: number;
-  xMin: number;
-  xMax: number;
-  yMin: number;
-  yMax: number;
-  boardSize: 9 | 13 | 19;
-}): DisplayBounds => {
-  const leftLineX = padding;
-  const rightLineX = padding + (xMax - xMin) * cellSize;
-  const topLineY = padding;
-  const bottomLineY = padding + (yMax - yMin) * cellSize;
+export const getVisiblePoints = (area: VisibleArea): BoardPoint[] => {
+  const points: BoardPoint[] = [];
 
-  return {
-    xStart: xMin === 1 ? leftLineX : leftLineX - cellSize / 2,
-    xEnd: xMax === boardSize ? rightLineX : rightLineX + cellSize / 2,
-    yStart: yMin === 1 ? topLineY : topLineY - cellSize / 2,
-    yEnd: yMax === boardSize ? bottomLineY : bottomLineY + cellSize / 2,
-  };
+  for (let y = area.yMin; y <= area.yMax; y += 1) {
+    for (let x = area.xMin; x <= area.xMax; x += 1) {
+      points.push({ x, y });
+    }
+  }
+
+  return points;
 };

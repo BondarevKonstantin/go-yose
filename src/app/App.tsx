@@ -1,5 +1,5 @@
-import { HomePage } from '@/pages/home/HomePage'
+import { HomePage } from '@/pages/home/HomePage';
 
 export const App = () => {
-  return <HomePage />
-}
+  return <HomePage />;
+};
