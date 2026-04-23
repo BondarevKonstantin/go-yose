@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import {
   getBoardPixelPosition,
   getStarPoints,
@@ -27,6 +27,7 @@ export const GoBoard = ({
   onPointClick,
 }: Props) => {
   const [hoveredPoint, setHoveredPoint] = useState<BoardPoint | null>(null);
+  const clipPathId = useId();
 
   const padding = 36;
   const edgeStrokeWidth = 2.6;
@@ -124,6 +125,7 @@ export const GoBoard = ({
       width={svgWidth}
       height={svgHeight}
       viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`}
+      style={{ overflow: 'visible', display: 'block' }}
     >
       <defs>
         <radialGradient id="board-bg" cx="50%" cy="45%" r="75%">
@@ -142,117 +144,123 @@ export const GoBoard = ({
           <stop offset="70%" stopColor="#f3f3f3" />
           <stop offset="100%" stopColor="#dddddd" />
         </radialGradient>
+
+        <clipPath id={clipPathId}>
+          <rect x={viewBox.x} y={viewBox.y} width={viewBox.width} height={viewBox.height} />
+        </clipPath>
       </defs>
 
-      <rect
-        x={viewBox.x}
-        y={viewBox.y}
-        width={viewBox.width}
-        height={viewBox.height}
-        fill="url(#board-bg)"
-      />
+      <g clipPath={`url(#${clipPathId})`}>
+        <rect
+          x={viewBox.x}
+          y={viewBox.y}
+          width={viewBox.width}
+          height={viewBox.height}
+          fill="url(#board-bg)"
+        />
 
-      {verticalLines.map((index) => {
-        const x = innerStart + index * cellSize;
+        {verticalLines.map((index) => {
+          const x = innerStart + index * cellSize;
 
-        return (
+          return (
+            <line
+              key={`vertical-${index}`}
+              x1={x}
+              y1={innerStart}
+              x2={x}
+              y2={innerEndY}
+              stroke="#2f2c28"
+              strokeWidth={1.4}
+              shapeRendering="geometricPrecision"
+            />
+          );
+        })}
+
+        {horizontalLines.map((index) => {
+          const y = innerStart + index * cellSize;
+
+          return (
+            <line
+              key={`horizontal-${index}`}
+              x1={innerStart}
+              y1={y}
+              x2={innerEndX}
+              y2={y}
+              stroke="#2f2c28"
+              strokeWidth={1.4}
+              shapeRendering="geometricPrecision"
+            />
+          );
+        })}
+
+        {starPoints.map((point) => {
+          const position = getBoardPixelPosition({
+            point,
+            cellSize,
+            padding,
+            xMin: visibleArea.xMin,
+            yMin: visibleArea.yMin,
+          });
+
+          return (
+            <circle
+              key={`star-${point.x}-${point.y}`}
+              cx={position.x}
+              cy={position.y}
+              r={cellSize * 0.08}
+              fill="#2b2824"
+            />
+          );
+        })}
+
+        {visibleEdges.top && (
           <line
-            key={`vertical-${index}`}
-            x1={x}
-            y1={innerStart}
-            x2={x}
-            y2={innerEndY}
-            stroke="#2f2c28"
-            strokeWidth={1.4}
-            shapeRendering="geometricPrecision"
-          />
-        );
-      })}
-
-      {horizontalLines.map((index) => {
-        const y = innerStart + index * cellSize;
-
-        return (
-          <line
-            key={`horizontal-${index}`}
             x1={innerStart}
-            y1={y}
+            y1={innerStart}
             x2={innerEndX}
-            y2={y}
-            stroke="#2f2c28"
-            strokeWidth={1.4}
+            y2={innerStart}
+            stroke="#2b2824"
+            strokeWidth={edgeStrokeWidth}
             shapeRendering="geometricPrecision"
           />
-        );
-      })}
+        )}
 
-      {starPoints.map((point) => {
-        const position = getBoardPixelPosition({
-          point,
-          cellSize,
-          padding,
-          xMin: visibleArea.xMin,
-          yMin: visibleArea.yMin,
-        });
-
-        return (
-          <circle
-            key={`star-${point.x}-${point.y}`}
-            cx={position.x}
-            cy={position.y}
-            r={cellSize * 0.08}
-            fill="#2b2824"
+        {visibleEdges.right && (
+          <line
+            x1={innerEndX}
+            y1={innerStart}
+            x2={innerEndX}
+            y2={innerEndY}
+            stroke="#2b2824"
+            strokeWidth={edgeStrokeWidth}
+            shapeRendering="geometricPrecision"
           />
-        );
-      })}
+        )}
 
-      {visibleEdges.top && (
-        <line
-          x1={innerStart}
-          y1={innerStart}
-          x2={innerEndX}
-          y2={innerStart}
-          stroke="#2b2824"
-          strokeWidth={edgeStrokeWidth}
-          shapeRendering="geometricPrecision"
-        />
-      )}
+        {visibleEdges.bottom && (
+          <line
+            x1={innerStart}
+            y1={innerEndY}
+            x2={innerEndX}
+            y2={innerEndY}
+            stroke="#2b2824"
+            strokeWidth={edgeStrokeWidth}
+            shapeRendering="geometricPrecision"
+          />
+        )}
 
-      {visibleEdges.right && (
-        <line
-          x1={innerEndX}
-          y1={innerStart}
-          x2={innerEndX}
-          y2={innerEndY}
-          stroke="#2b2824"
-          strokeWidth={edgeStrokeWidth}
-          shapeRendering="geometricPrecision"
-        />
-      )}
-
-      {visibleEdges.bottom && (
-        <line
-          x1={innerStart}
-          y1={innerEndY}
-          x2={innerEndX}
-          y2={innerEndY}
-          stroke="#2b2824"
-          strokeWidth={edgeStrokeWidth}
-          shapeRendering="geometricPrecision"
-        />
-      )}
-
-      {visibleEdges.left && (
-        <line
-          x1={innerStart}
-          y1={innerStart}
-          x2={innerStart}
-          y2={innerEndY}
-          stroke="#2b2824"
-          strokeWidth={edgeStrokeWidth}
-          shapeRendering="geometricPrecision"
-        />
-      )}
+        {visibleEdges.left && (
+          <line
+            x1={innerStart}
+            y1={innerStart}
+            x2={innerStart}
+            y2={innerEndY}
+            stroke="#2b2824"
+            strokeWidth={edgeStrokeWidth}
+            shapeRendering="geometricPrecision"
+          />
+        )}
+      </g>
 
       {hoveredPointPosition && (
         <circle

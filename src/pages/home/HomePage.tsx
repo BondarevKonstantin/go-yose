@@ -1,29 +1,24 @@
-import { useState } from 'react';
-import { GoBoard } from '@/entities/go-board/ui/GoBoard';
-import { BoardPoint } from '@/entities/go-board/model/types';
+import { useNavigate } from 'react-router-dom';
+import { routes } from '@/shared/config/routes';
 
 export const HomePage = () => {
-  const [selectedPoint, setSelectedPoint] = useState<BoardPoint | null>(null);
+  const navigate = useNavigate();
 
   return (
-    <GoBoard
-      size={9}
-      viewport={{
-        type: 'corner',
-        corner: 'top-right',
-        width: 5,
-        height: 6,
-      }}
-      stones={[
-        { x: 7, y: 2, color: 'black' },
-        { x: 6, y: 4, color: 'black' },
-        { x: 7, y: 4, color: 'black' },
-        { x: 6, y: 5, color: 'white' },
-        { x: 7, y: 5, color: 'white' },
-        { x: 7, y: 7, color: 'white' },
-      ]}
-      markers={selectedPoint ? [{ ...selectedPoint, type: 'triangle' }] : []}
-      onPointClick={setSelectedPoint}
-    />
+    <div style={{ padding: 40 }}>
+      <h1>Yose Trainer</h1>
+
+      <button
+        onClick={() => navigate(routes.quiz)}
+        style={{
+          marginTop: 20,
+          padding: '12px 20px',
+          fontSize: 16,
+          cursor: 'pointer',
+        }}
+      >
+        Начать квиз
+      </button>
+    </div>
   );
 };
