@@ -16,6 +16,7 @@ type Props = {
   markers?: Marker[];
   viewport?: BoardViewport;
   onPointClick?: (point: BoardPoint) => void;
+  isInteractive?: boolean;
 };
 
 export const GoBoard = ({
@@ -25,6 +26,7 @@ export const GoBoard = ({
   markers = [],
   viewport = { type: 'full' },
   onPointClick,
+  isInteractive = true,
 }: Props) => {
   const [hoveredPoint, setHoveredPoint] = useState<BoardPoint | null>(null);
   const clipPathId = useId();
@@ -110,7 +112,7 @@ export const GoBoard = ({
   }, [boardSizePx, padding, size, stones, markers, viewport, hoveredPoint, edgeBleed]);
 
   const hoveredPointPosition =
-    hoveredPoint && isHoveredPointVisible
+    isInteractive && hoveredPoint && isHoveredPointVisible
       ? getBoardPixelPosition({
           point: hoveredPoint,
           cellSize,
@@ -119,6 +121,10 @@ export const GoBoard = ({
           yMin: visibleArea.yMin,
         })
       : null;
+
+  if (!isInteractive && hoveredPoint !== null) {
+    setHoveredPoint(null);
+  }
 
   return (
     <svg
@@ -262,7 +268,7 @@ export const GoBoard = ({
         )}
       </g>
 
-      {hoveredPointPosition && (
+      {isInteractive && hoveredPointPosition && (
         <circle
           cx={hoveredPointPosition.x}
           cy={hoveredPointPosition.y}
@@ -289,10 +295,16 @@ export const GoBoard = ({
             cy={position.y}
             r={cellSize * 0.32}
             fill="transparent"
-            onMouseEnter={() => setHoveredPoint(point)}
-            onMouseLeave={() => setHoveredPoint(null)}
-            onClick={() => onPointClick?.(point)}
-            style={{ cursor: onPointClick ? 'pointer' : 'default' }}
+            onMouseEnter={() => {
+              if (isInteractive) setHoveredPoint(point);
+            }}
+            onMouseLeave={() => {
+              if (isInteractive) setHoveredPoint(null);
+            }}
+            onClick={() => {
+              if (isInteractive) onPointClick?.(point);
+            }}
+            style={{ cursor: isInteractive ? 'pointer' : 'default' }}
           />
         );
       })}
