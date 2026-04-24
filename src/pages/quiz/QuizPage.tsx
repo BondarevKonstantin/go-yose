@@ -60,6 +60,7 @@ const QuizPageContent = ({ card, isSingleCardMode, onNextCard }: QuizPageContent
     handleStepViewerNextMove,
     handleSelfPlayPass,
     handleReviewModeChange,
+    handleStepViewerPass,
   } = useReviewSession(card);
 
   const [phase, setPhase] = useState<QuizPhase>('answering');
@@ -100,8 +101,8 @@ const QuizPageContent = ({ card, isSingleCardMode, onNextCard }: QuizPageContent
       ...prev,
       message:
         isValueCorrect && isTypeCorrect
-          ? '✅ Правильно'
-          : `❌ Неправильно (ответ: ${card.value}, ${card.resultType})`,
+          ? '✅ Correct'
+          : '❌ Incorrect. Review the answer and the lines',
     }));
   };
 
@@ -147,11 +148,16 @@ const QuizPageContent = ({ card, isSingleCardMode, onNextCard }: QuizPageContent
 
           {phase === 'review' && (
             <>
-              <ResultPanel message={review.message} />
+              <ResultPanel
+                message={review.message}
+                correctValue={card.value}
+                correctResultType={card.resultType}
+              />
 
               <ReviewPanel
                 review={review}
                 isSingleCardMode={isSingleCardMode}
+                onStepViewerPass={handleStepViewerPass}
                 onModeChange={handleReviewModeChange}
                 onGuidedPass={handleGuidedPass}
                 onStepViewerNextMove={handleStepViewerNextMove}

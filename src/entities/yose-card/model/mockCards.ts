@@ -31,7 +31,7 @@ export const mockCards: YoseCard[] = [
           {
             id: 'best',
             isBest: true,
-            message: 'Лучший ход',
+            message: 'Best move',
             moves: [
               { type: 'play', x: 9, y: 5, color: 'black' },
               { type: 'play', x: 9, y: 6, color: 'white' },
@@ -40,7 +40,7 @@ export const mockCards: YoseCard[] = [
           },
           {
             id: 'pass',
-            message: 'Если черные проигнорируют эту точку',
+            message: 'If Black ignores this point',
             moves: [
               { type: 'pass', color: 'black' },
               { type: 'play', x: 9, y: 4, color: 'white' },
@@ -62,53 +62,84 @@ export const mockCards: YoseCard[] = [
       type: 'side',
       side: 'right',
       width: 5,
-      height: 9,
+      height: 10,
     },
-    value: 0, // TODO
-    resultType: 'gote', // TODO
+    value: 7,
+    resultType: 'sente',
     initialScenarioId: 'main',
     scenarios: [
       {
         id: 'main',
         startingColor: 'black',
         initialStones: [
-          // black
-          { x: 7, y: 7, color: 'black' },
-          { x: 8, y: 7, color: 'black' },
-          { x: 9, y: 7, color: 'black' },
-          { x: 8, y: 8, color: 'black' },
+          { x: 17, y: 13, color: 'black' },
+          { x: 16, y: 12, color: 'black' },
+          { x: 17, y: 12, color: 'black' },
+          { x: 18, y: 12, color: 'black' },
 
-          // white
-          { x: 8, y: 2, color: 'white' },
-          { x: 8, y: 3, color: 'white' },
-          { x: 7, y: 4, color: 'white' },
-          { x: 7, y: 5, color: 'white' },
-          { x: 7, y: 6, color: 'white' },
-          { x: 8, y: 6, color: 'white' },
+          { x: 17, y: 11, color: 'white' },
+          { x: 17, y: 10, color: 'white' },
+          { x: 16, y: 10, color: 'white' },
+          { x: 16, y: 9, color: 'white' },
+          { x: 16, y: 8, color: 'white' },
+          { x: 17, y: 7, color: 'white' },
+          { x: 17, y: 6, color: 'white' },
         ],
         variations: [
           {
             id: 'best',
             isBest: true,
-            message: 'Лучший ход',
+            message: 'Best move',
             moves: [
-              { type: 'play', x: 9, y: 5, color: 'black' },
-              { type: 'play', x: 9, y: 4, color: 'white' },
-              { type: 'play', x: 9, y: 6, color: 'black' },
+              { type: 'play', x: 19, y: 9, color: 'black' },
+              { type: 'play', x: 18, y: 9, color: 'white' },
+              { type: 'play', x: 19, y: 10, color: 'black' },
+              { type: 'play', x: 18, y: 11, color: 'white' },
+              { type: 'play', x: 19, y: 11, color: 'black' },
+              { type: 'play', x: 18, y: 8, color: 'white' },
+              { type: 'play', x: 19, y: 8, color: 'black' },
+              { type: 'play', x: 19, y: 7, color: 'white' },
+            ],
+          },
+          {
+            id: 'worse',
+            isBest: true,
+            message: 'Not the best move',
+            moves: [
+              { type: 'play', x: 19, y: 10, color: 'black' },
+              { type: 'play', x: 19, y: 9, color: 'white' },
+              { type: 'play', x: 18, y: 11, color: 'black' },
+              { type: 'play', x: 18, y: 10, color: 'white' },
+              { type: 'play', x: 19, y: 11, color: 'black' },
+            ],
+          },
+          {
+            id: 'ok',
+            isBest: false,
+            message: 'Also a good move',
+            moves: [
+              { type: 'play', x: 19, y: 11, color: 'black' },
+              { type: 'play', x: 18, y: 9, color: 'white' },
+              { type: 'play', x: 19, y: 9, color: 'black' },
+              { type: 'play', x: 19, y: 8, color: 'white' },
+              { type: 'play', x: 19, y: 10, color: 'black' },
+              { type: 'play', x: 18, y: 8, color: 'white' },
             ],
           },
           {
             id: 'pass',
-            message: 'Если черные проигнорируют эту точку',
+            message: 'If Black ignores this point',
             moves: [
               { type: 'pass', color: 'black' },
-              { type: 'play', x: 9, y: 5, color: 'white' },
-              { type: 'play', x: 9, y: 6, color: 'black' },
+              { type: 'play', x: 18, y: 11, color: 'white' },
+              { type: 'play', x: 19, y: 11, color: 'black' },
+              { type: 'play', x: 19, y: 10, color: 'white' },
+              { type: 'play', x: 19, y: 12, color: 'black' },
             ],
           },
         ],
       },
     ],
-    explanation: '',
+    explanation: 'Monkey Jump',
   },
 ];

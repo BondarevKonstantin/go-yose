@@ -10,6 +10,7 @@ type ReviewPanelProps = {
   onSelfPlayPass: () => void;
   onReset: () => void;
   onNextCard: () => void;
+  onStepViewerPass: () => void;
 };
 
 export const ReviewPanel = ({
@@ -21,6 +22,7 @@ export const ReviewPanel = ({
   onSelfPlayPass,
   onReset,
   onNextCard,
+  onStepViewerPass,
 }: ReviewPanelProps) => {
   return (
     <Panel>
@@ -28,13 +30,26 @@ export const ReviewPanel = ({
 
       <SegmentedControl>
         {[
-          { key: 'guided', label: 'Guided' },
-          { key: 'step-viewer', label: 'Step' },
-          { key: 'self-play', label: 'Self' },
+          {
+            key: 'guided',
+            label: 'Guided',
+            title: 'You make a move, and the system automatically responds with the next move',
+          },
+          {
+            key: 'step-viewer',
+            label: 'Step',
+            title: 'You go through the correct variation step by step',
+          },
+          {
+            key: 'self-play',
+            label: 'Self',
+            title: 'You reproduce the entire variation on your own',
+          },
         ].map((item) => (
           <SegmentButton
             key={item.key}
             $active={review.mode === item.key}
+            title={item.title}
             onClick={() => onModeChange(item.key as ReviewSessionState['mode'])}
           >
             {item.label}
@@ -54,12 +69,21 @@ export const ReviewPanel = ({
       )}
 
       {review.mode === 'step-viewer' && (
-        <Button
-          onClick={onStepViewerNextMove}
-          disabled={review.isAnimating || review.progress === 'finished'}
-        >
-          Next move
-        </Button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Button
+            onClick={onStepViewerNextMove}
+            disabled={review.isAnimating || review.progress === 'finished'}
+          >
+            Next move
+          </Button>
+
+          <Button
+            onClick={onStepViewerPass}
+            disabled={review.isAnimating || review.progress === 'finished'}
+          >
+            Pass
+          </Button>
+        </div>
       )}
 
       {review.mode === 'self-play' && (
@@ -73,13 +97,13 @@ export const ReviewPanel = ({
 
       <div style={{ marginTop: 12 }}>
         <Button onClick={onReset}>Reset</Button>
-
-        {!isSingleCardMode && (
-          <Button style={{ marginLeft: 8 }} onClick={onNextCard}>
-            Next card
-          </Button>
-        )}
       </div>
+
+      {!isSingleCardMode && (
+        <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #e5e7eb' }}>
+          <Button onClick={onNextCard}>Next card</Button>
+        </div>
+      )}
     </Panel>
   );
 };

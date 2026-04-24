@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { routes } from '@/shared/config/routes';
+import { NavbarLogo } from './NavbarLogo';
 
 const linkBaseStyle: React.CSSProperties = {
   textDecoration: 'none',
@@ -31,18 +32,8 @@ export const Navbar = () => {
           justifyContent: 'space-between',
         }}
       >
-        {/* LOGO / TITLE */}
-        <div
-          style={{
-            fontSize: 16,
-            fontWeight: 600,
-            color: '#111111',
-          }}
-        >
-          Yose Trainer
-        </div>
+        <NavbarLogo />
 
-        {/* LINKS */}
         <div style={{ display: 'flex', gap: 8 }}>
           <NavLink
             to={routes.home}

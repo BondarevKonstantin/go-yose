@@ -121,11 +121,6 @@ export const GoBoard = ({
           yMin: visibleArea.yMin,
         })
       : null;
-
-  if (!isInteractive && hoveredPoint !== null) {
-    setHoveredPoint(null);
-  }
-
   return (
     <svg
       width={svgWidth}

@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { BoardPoint } from '@/entities/go-board/model/types';
+import { BoardPoint, Stone } from '@/entities/go-board/model/types';
 import { applyMoveToStones } from '@/entities/go-board/model/stoneHelpers';
 import {
   findVariationByFirstMove,
@@ -8,12 +8,25 @@ import {
 } from '@/entities/yose-card/model/helpers';
 import { YoseCard, YoseMove, YoseVariation } from '@/entities/yose-card/model/types';
 import { ReviewSessionState } from './types';
+import { playStoneSound } from '@/shared/lib/sound/playStoneSound';
 
 export const useReviewSession = (card: YoseCard) => {
   const initialScenario = useMemo(() => getScenarioById(card, card.initialScenarioId), [card]);
 
+  const REVIEW_MODE_STORAGE_KEY = 'go-yose-review-mode';
+
+  const getInitialReviewMode = (): ReviewSessionState['mode'] => {
+    const savedMode = localStorage.getItem(REVIEW_MODE_STORAGE_KEY);
+
+    if (savedMode === 'guided' || savedMode === 'step-viewer' || savedMode === 'self-play') {
+      return savedMode;
+    }
+
+    return 'guided';
+  };
+
   const createInitialReviewState = (
-    mode: ReviewSessionState['mode'] = 'guided',
+    mode: ReviewSessionState['mode'] = getInitialReviewMode(),
   ): ReviewSessionState => ({
     mode,
     progress: 'idle',
@@ -54,14 +67,22 @@ export const useReviewSession = (card: YoseCard) => {
     }));
   };
 
-  const finishVariationIfNeeded = (variation: YoseVariation) => {
+  const applyMoveWithSound = (stones: Stone[], move: YoseMove) => {
+    if (move.type === 'play') {
+      playStoneSound();
+    }
+
+    return applyMoveToStones(stones, move);
+  };
+
+  const finishVariationIfNeeded = () => {
     clearReviewTimeouts();
 
     setReview((prev) => ({
       ...prev,
       progress: 'finished',
       isAnimating: false,
-      message: variation.message ? `${variation.message}\nВариант окончен` : 'Вариант окончен',
+      message: 'Variation is finished',
     }));
   };
 
@@ -69,14 +90,14 @@ export const useReviewSession = (card: YoseCard) => {
     const move = variation.moves[moveIndex];
 
     if (!move) {
-      finishVariationIfNeeded(variation);
+      finishVariationIfNeeded();
       return;
     }
 
     setReview((prev) => ({
       ...prev,
       currentMoveIndex: moveIndex,
-      currentStones: applyMoveToStones(prev.currentStones, move),
+      currentStones: applyMoveWithSound(prev.currentStones, move),
       isAnimating: false,
     }));
 
@@ -84,7 +105,7 @@ export const useReviewSession = (card: YoseCard) => {
 
     if (isLastMove) {
       const timeoutId = window.setTimeout(() => {
-        finishVariationIfNeeded(variation);
+        finishVariationIfNeeded();
       }, 150);
 
       reviewTimeoutsRef.current.push(timeoutId);
@@ -105,14 +126,14 @@ export const useReviewSession = (card: YoseCard) => {
       progress: 'in_progress',
       activeVariationId: variation.id,
       currentMoveIndex: 0,
-      currentStones: applyMoveToStones(prev.currentStones, firstMove),
+      currentStones: applyMoveWithSound(prev.currentStones, firstMove),
       message: variation.message ?? prev.message,
       isAnimating: variation.moves.length > 1,
     }));
 
     if (variation.moves.length === 1) {
       const timeoutId = window.setTimeout(() => {
-        finishVariationIfNeeded(variation);
+        finishVariationIfNeeded();
       }, 150);
 
       reviewTimeoutsRef.current.push(timeoutId);
@@ -146,7 +167,7 @@ export const useReviewSession = (card: YoseCard) => {
       const variation = findVariationByFirstMove(currentScenario.variations, move);
 
       if (!variation) {
-        setReviewMessage('Такого варианта нет');
+        setReviewMessage("There's not such a variation yet");
         return;
       }
 
@@ -170,7 +191,7 @@ export const useReviewSession = (card: YoseCard) => {
     const expectedMove = variation.moves[expectedIndex];
 
     if (!expectedMove) {
-      finishVariationIfNeeded(variation);
+      finishVariationIfNeeded();
       return;
     }
 
@@ -182,14 +203,14 @@ export const useReviewSession = (card: YoseCard) => {
     const isCorrect = expectedMove.x === point.x && expectedMove.y === point.y;
 
     if (!isCorrect) {
-      setReviewMessage('Ожидался другой ход');
+      setReviewMessage("There's not such a variation yet");
       return;
     }
 
     setReview((prev) => ({
       ...prev,
       currentMoveIndex: expectedIndex,
-      currentStones: applyMoveToStones(prev.currentStones, expectedMove),
+      currentStones: applyMoveWithSound(prev.currentStones, expectedMove),
       isAnimating: true,
     }));
 
@@ -197,7 +218,7 @@ export const useReviewSession = (card: YoseCard) => {
 
     if (isLastUserMove) {
       const timeoutId = window.setTimeout(() => {
-        finishVariationIfNeeded(variation);
+        finishVariationIfNeeded();
       }, 150);
 
       reviewTimeoutsRef.current.push(timeoutId);
@@ -224,7 +245,7 @@ export const useReviewSession = (card: YoseCard) => {
     const variation = findVariationByFirstMove(currentScenario.variations, move);
 
     if (!variation) {
-      setReviewMessage('Для pass варианта нет');
+      setReviewMessage('No variation for pass');
       return;
     }
 
@@ -244,7 +265,7 @@ export const useReviewSession = (card: YoseCard) => {
       const variation = getBestVariation(currentScenario.variations);
 
       if (!variation) {
-        setReviewMessage('Лучший вариант не найден');
+        setReviewMessage('We have got a variation error');
         return;
       }
 
@@ -259,13 +280,13 @@ export const useReviewSession = (card: YoseCard) => {
         progress: 'in_progress',
         activeVariationId: variation.id,
         currentMoveIndex: 0,
-        currentStones: applyMoveToStones(prev.currentStones, firstMove),
+        currentStones: applyMoveWithSound(prev.currentStones, firstMove),
         message: variation.message ?? prev.message,
         isAnimating: false,
       }));
 
       if (variation.moves.length === 1) {
-        finishVariationIfNeeded(variation);
+        finishVariationIfNeeded();
       }
 
       return;
@@ -287,7 +308,7 @@ export const useReviewSession = (card: YoseCard) => {
     const nextMove = variation.moves[nextMoveIndex];
 
     if (!nextMove) {
-      finishVariationIfNeeded(variation);
+      finishVariationIfNeeded();
       return;
     }
 
@@ -296,12 +317,12 @@ export const useReviewSession = (card: YoseCard) => {
     setReview((prev) => ({
       ...prev,
       currentMoveIndex: nextMoveIndex,
-      currentStones: applyMoveToStones(prev.currentStones, nextMove),
+      currentStones: applyMoveWithSound(prev.currentStones, nextMove),
       isAnimating: false,
     }));
 
     if (isLastMove) {
-      finishVariationIfNeeded(variation);
+      finishVariationIfNeeded();
     }
   };
 
@@ -325,7 +346,7 @@ export const useReviewSession = (card: YoseCard) => {
       const variation = findVariationByFirstMove(currentScenario.variations, move);
 
       if (!variation) {
-        setReviewMessage('Такого варианта нет');
+        setReviewMessage("There's not such a variation yet");
         return;
       }
 
@@ -340,12 +361,12 @@ export const useReviewSession = (card: YoseCard) => {
         progress: 'in_progress',
         activeVariationId: variation.id,
         currentMoveIndex: 0,
-        currentStones: applyMoveToStones(prev.currentStones, firstMove),
+        currentStones: applyMoveWithSound(prev.currentStones, firstMove),
         message: variation.message ?? prev.message,
       }));
 
       if (variation.moves.length === 1) {
-        finishVariationIfNeeded(variation);
+        finishVariationIfNeeded();
       }
 
       return;
@@ -363,7 +384,7 @@ export const useReviewSession = (card: YoseCard) => {
     const expectedMove = variation.moves[nextMoveIndex];
 
     if (!expectedMove) {
-      finishVariationIfNeeded(variation);
+      finishVariationIfNeeded();
       return;
     }
 
@@ -375,7 +396,7 @@ export const useReviewSession = (card: YoseCard) => {
     const isCorrect = expectedMove.x === point.x && expectedMove.y === point.y;
 
     if (!isCorrect) {
-      setReviewMessage('Ожидался другой ход');
+      setReviewMessage("There's not such a variation yet");
       return;
     }
 
@@ -384,12 +405,12 @@ export const useReviewSession = (card: YoseCard) => {
       progress: 'in_progress',
       activeVariationId: variation.id,
       currentMoveIndex: nextMoveIndex,
-      currentStones: applyMoveToStones(prev.currentStones, expectedMove),
+      currentStones: applyMoveWithSound(prev.currentStones, expectedMove),
       message: variation.message ?? prev.message,
     }));
 
     if (nextMoveIndex === variation.moves.length - 1) {
-      finishVariationIfNeeded(variation);
+      finishVariationIfNeeded();
     }
   };
 
@@ -410,7 +431,7 @@ export const useReviewSession = (card: YoseCard) => {
     const variation = findVariationByFirstMove(currentScenario.variations, move);
 
     if (!variation) {
-      setReviewMessage('Для pass варианта нет');
+      setReviewMessage('No variation for pass');
       return;
     }
 
@@ -429,7 +450,76 @@ export const useReviewSession = (card: YoseCard) => {
     }));
 
     if (variation.moves.length === 1) {
-      finishVariationIfNeeded(variation);
+      finishVariationIfNeeded();
+    }
+  };
+
+  const handleStepViewerPass = () => {
+    if (review.mode !== 'step-viewer') {
+      return;
+    }
+
+    if (review.isAnimating || review.progress === 'finished') {
+      return;
+    }
+
+    if (review.progress === 'idle') {
+      const move: YoseMove = {
+        type: 'pass',
+        color: currentScenario.startingColor,
+      };
+
+      const variation = findVariationByFirstMove(currentScenario.variations, move);
+
+      if (!variation) {
+        setReviewMessage('No variation for pass');
+        return;
+      }
+
+      setReview((prev) => ({
+        ...prev,
+        progress: 'in_progress',
+        activeVariationId: variation.id,
+        currentMoveIndex: 0,
+        message: variation.message ?? prev.message,
+      }));
+
+      if (variation.moves.length === 1) {
+        finishVariationIfNeeded();
+      }
+
+      return;
+    }
+
+    const variation = currentScenario.variations.find(
+      (item) => item.id === review.activeVariationId,
+    );
+
+    if (!variation) {
+      return;
+    }
+
+    const nextMoveIndex = review.currentMoveIndex + 1;
+    const expectedMove = variation.moves[nextMoveIndex];
+
+    if (!expectedMove) {
+      finishVariationIfNeeded();
+      return;
+    }
+
+    if (expectedMove.type !== 'pass') {
+      setReviewMessage('Сейчас ожидается ход на доске');
+      return;
+    }
+
+    setReview((prev) => ({
+      ...prev,
+      currentMoveIndex: nextMoveIndex,
+      message: variation.message ?? prev.message,
+    }));
+
+    if (nextMoveIndex === variation.moves.length - 1) {
+      finishVariationIfNeeded();
     }
   };
 
@@ -447,6 +537,8 @@ export const useReviewSession = (card: YoseCard) => {
   const handleReviewModeChange = (mode: ReviewSessionState['mode']) => {
     clearReviewTimeouts();
 
+    localStorage.setItem(REVIEW_MODE_STORAGE_KEY, mode || 'guided');
+
     setReview((prev) => ({
       ...prev,
       mode,
@@ -457,10 +549,10 @@ export const useReviewSession = (card: YoseCard) => {
       isAnimating: false,
       message:
         mode === 'guided'
-          ? 'Режим: автоответ'
+          ? 'Guided mode'
           : mode === 'step-viewer'
-            ? 'Режим: по шагам'
-            : 'Режим: прокликай вариант самостоятельно',
+            ? 'Step mode'
+            : 'Click through mode',
     }));
   };
 
@@ -475,5 +567,6 @@ export const useReviewSession = (card: YoseCard) => {
     handleStepViewerNextMove,
     handleSelfPlayPass,
     handleReviewModeChange,
+    handleStepViewerPass,
   };
 };

@@ -23,7 +23,6 @@ export type YoseVariation = {
   isKnownButBad?: boolean;
   label?: string;
   message?: string;
-  followUpScenarioId?: string;
 };
 
 export type YoseScenario = {
